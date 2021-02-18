@@ -9,27 +9,27 @@ import { SubredditResolver } from "./resolvers/SubredditResolver";
 import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
 (async () => {
-    const app = express();
-    app.use(bodyParser.urlencoded({ extended: true }));
-    app.use(bodyParser.json());
-    app.use(cookieParser());
+	const app = express();
+	app.use(bodyParser.urlencoded({ extended: true }));
+	app.use(bodyParser.json());
+	app.use(cookieParser());
 
-    const options = await getConnectionOptions(
-        process.env.NODE_ENV || "development"
-    );
-    await createConnection({ ...options, name: "default" });
+	const options = await getConnectionOptions(
+		process.env.NODE_ENV || "development"
+	);
+	await createConnection({ ...options, name: "default" });
 
-    const apolloServer = new ApolloServer({
-        schema: await buildSchema({
-            resolvers: [UserResolver, PostResolver, SubredditResolver],
-            validate: true,
-        }),
-        context: ({ req, res }) => ({ req, res }),
-    });
+	const apolloServer = new ApolloServer({
+		schema: await buildSchema({
+			resolvers: [UserResolver, PostResolver, SubredditResolver],
+			validate: true,
+		}),
+		context: ({ req, res }) => ({ req, res }),
+	});
 
-    apolloServer.applyMiddleware({ app, cors: false });
-    const port = process.env.PORT || 4000;
-    app.listen(port, () => {
-        console.log(`server started at http://localhost:${port}/graphql`);
-    });
+	apolloServer.applyMiddleware({ app, cors: false });
+	const port = process.env.PORT || 4000;
+	app.listen(port, () => {
+		console.log(`server started at http://localhost:${port}/graphql`);
+	});
 })();
