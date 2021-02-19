@@ -10,6 +10,7 @@ import {
 	Arg,
 	Ctx,
 	Int,
+	ID,
 } from "type-graphql";
 
 const checkLoginStatus = require("../utils/checkLoginStatus");
@@ -26,6 +27,18 @@ class CreatePostInput {
 	subreddit?: string;
 }
 
+@InputType()
+class UpdatePostInput {
+	@Field(() => Int, { nullable: true })
+	id: number;
+
+	@Field({ nullable: true })
+	title?: string;
+
+	@Field({ nullable: true })
+	content?: string;
+}
+
 @ObjectType()
 class CreatePostResponse {
 	@Field(() => [FieldError], { nullable: true })
@@ -36,7 +49,7 @@ class CreatePostResponse {
 }
 
 @ObjectType()
-class DeletePostResponse {
+class MutatePostResponse {
 	@Field(() => [FieldError], { nullable: true })
 	errors?: FieldError[];
 
@@ -80,8 +93,11 @@ export class PostResolver {
 		return { post };
 	}
 
-	@Mutation(() => DeletePostResponse)
-	async deletePost(@Arg("id", () => Int) id: number, @Ctx() { req }: ReqRes) {
+	@Mutation(() => MutatePostResponse)
+	async deletePost(
+		@Arg("id", () => Int) id: number,
+		@Ctx() { req }: ReqRes
+	): Promise<MutatePostResponse> {
 		let { ok, user } = await checkLoginStatus(req);
 		if (!ok) {
 			return {
@@ -106,9 +122,59 @@ export class PostResolver {
 								"you need to be logged in as the author of the message to delete it",
 						},
 					],
+					ok: false,
 				};
 			} else {
 				await Post.delete({ id });
+				return { ok: true };
+			}
+		} catch {
+			return {
+				errors: [
+					{
+						error: "that message does not exist",
+						message: "cannot find a message with that id",
+					},
+				],
+				ok: false,
+			};
+		}
+	}
+
+	@Mutation(() => MutatePostResponse)
+	async updatePost(
+		@Arg("options", () => UpdatePostInput) options: UpdatePostInput,
+		@Ctx() { req }: ReqRes
+	) {
+		let { ok, user } = await checkLoginStatus(req);
+		if (!ok) {
+			return {
+				errors: [
+					{
+						error: "you need to be logged in",
+						message:
+							"you need to be logged in as the owner of the message to delete it",
+					},
+				],
+				ok: false,
+			};
+		}
+		try {
+			let { id, title, content } = options;
+			let post: Post = await Post.findOneOrFail({ where: { id } });
+			if (post.author !== user.username) {
+				return {
+					errors: [
+						{
+							error: "you are not the author of the message",
+							message:
+								"you need to be logged in as the author of the message to delete it",
+						},
+					],
+					ok: false,
+				};
+			} else {
+				await Post.update({ id }, { title, content });
 				return { ok: true };
 			}
 		} catch {
