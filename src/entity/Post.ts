@@ -5,12 +5,13 @@ import {
 	Column,
 	CreateDateColumn,
 	ManyToOne,
+	BaseEntity,
 } from "typeorm";
 import { User } from "./User";
 
 @ObjectType()
 @Entity()
-export class Post {
+export class Post extends BaseEntity {
 	@Field(() => Int)
 	@PrimaryGeneratedColumn()
 	id: number;
@@ -24,7 +25,7 @@ export class Post {
 	author?: string;
 
 	@Field({ nullable: true })
-	@Column()
+	@Column({ nullable: true })
 	subreddit?: string;
 
 	@Field(() => Int, { nullable: true })

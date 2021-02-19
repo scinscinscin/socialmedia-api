@@ -1,4 +1,5 @@
 import { Field, ObjectType } from "type-graphql";
+import { Request, Response } from "express";
 
 @ObjectType()
 export class FieldError {
@@ -7,3 +8,8 @@ export class FieldError {
 	@Field()
 	message: string;
 }
+
+export type ReqRes = {
+	req: Request;
+	res: Response;
+};

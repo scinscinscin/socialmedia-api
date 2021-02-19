@@ -10,7 +10,7 @@ import {
 	Arg,
 	Ctx,
 } from "type-graphql";
-import { Request, Response } from "express";
+import { ReqRes } from "../types";
 import genSalt from "crypto-random-string";
 import pbkdf2 from "pbkdf2";
 import jsonwebtoken from "jsonwebtoken";
@@ -18,11 +18,7 @@ import { v4 as uuidv4 } from "uuid";
 
 const { jwt_secret } = require("../../constants.json");
 const validateUserInput = require("../utils/validateUserInput");
-
-export type ReqRes = {
-	req: Request;
-	res: Response;
-};
+const checkLoginStatus = require("../utils/checkLoginStatus");
 
 @InputType()
 class UsernamePassword {
@@ -72,13 +68,11 @@ export class UserResolver {
 
 	@Query(() => LoginResponse)
 	async checkLogin(@Ctx() { req }: ReqRes): Promise<LoginResponse> {
-		try {
-			let decoded: any = jsonwebtoken.verify(req.cookies.jwt, jwt_secret);
-			console.log(decoded);
-			let user = await User.findOne({ where: { uuid: decoded } });
-			return { ok: true, user };
-		} catch {
-			return { ok: false };
+		let { ok, user } = await checkLoginStatus(req);
+		if (!ok) {
+			return { ok }; //user is not logged in
+		} else {
+			return { ok, user }; //user is logged in
 		}
 	}
 
@@ -106,7 +100,7 @@ export class UserResolver {
 			.toString("hex");
 
 		try {
-			const status: any = await User.create({
+			const status: User = await User.create({
 				username,
 				uuid,
 				salt,

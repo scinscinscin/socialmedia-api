@@ -5,7 +5,7 @@ import { ApolloServer } from "apollo-server-express";
 import { buildSchema } from "type-graphql";
 import { UserResolver } from "./resolvers/UserResolver";
 import { PostResolver } from "./resolvers/PostResolver";
-import { SubredditResolver } from "./resolvers/SubredditResolver";
+//import { SubredditResolver } from "./resolvers/SubredditResolver";
 import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
 (async () => {
@@ -21,7 +21,7 @@ import cookieParser from "cookie-parser";
 
 	const apolloServer = new ApolloServer({
 		schema: await buildSchema({
-			resolvers: [UserResolver, PostResolver, SubredditResolver],
+			resolvers: [UserResolver, PostResolver],
 			validate: true,
 		}),
 		context: ({ req, res }) => ({ req, res }),
