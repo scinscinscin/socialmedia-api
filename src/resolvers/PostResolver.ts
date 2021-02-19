@@ -9,6 +9,7 @@ import {
 	InputType,
 	Arg,
 	Ctx,
+	Int,
 } from "type-graphql";
 
 const checkLoginStatus = require("../utils/checkLoginStatus");
@@ -32,6 +33,15 @@ class CreatePostResponse {
 
 	@Field(() => Post, { nullable: true })
 	post?: Post;
+}
+
+@ObjectType()
+class DeletePostResponse {
+	@Field(() => [FieldError], { nullable: true })
+	errors?: FieldError[];
+
+	@Field(() => Boolean, { nullable: true })
+	ok: boolean;
 }
 
 @Resolver()
@@ -68,5 +78,49 @@ export class PostResolver {
 			content,
 		}).save();
 		return { post };
+	}
+
+	@Mutation(() => DeletePostResponse)
+	async deletePost(@Arg("id", () => Int) id: number, @Ctx() { req }: ReqRes) {
+		let { ok, user } = await checkLoginStatus(req);
+		if (!ok) {
+			return {
+				errors: [
+					{
+						error: "you need to be logged in",
+						message:
+							"you need to be logged in as the owner of the message to delete it",
+					},
+				],
+				ok: false,
+			};
+		}
+		try {
+			let post: Post = await Post.findOneOrFail({ where: { id } });
+			if (post.author !== user.username) {
+				return {
+					errors: [
+						{
+							error: "you are not the author of the message",
+							message:
+								"you need to be logged in as the author of the message to delete it",
+						},
+					],
+				};
+			} else {
+				await Post.delete({ id });
+				return { ok: true };
+			}
+		} catch {
+			return {
+				errors: [
+					{
+						error: "that message does not exist",
+						message: "cannot find a message with that id",
+					},
+				],
+				ok: false,
+			};
+		}
 	}
 }
